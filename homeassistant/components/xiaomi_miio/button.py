@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from miio.integrations.vacuum.roborock.vacuum import Consumable
+from miio.integrations.roborock.vacuum.vacuum import Consumable
 
 from homeassistant.components.button import (
     ButtonDeviceClass,
