@@ -15,6 +15,7 @@ from miio import (
     AirFreshT2017,
     AirHumidifier,
     AirHumidifierMiot,
+    AirHumidifierMiotCA6,
     AirHumidifierMjjsq,
     AirPurifier,
     AirPurifierMiot,
@@ -33,7 +34,6 @@ from miio import (
     Timer,
     VacuumStatus,
 )
-from miio.gateway.gateway import GatewayException
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_DEVICE, CONF_HOST, CONF_MODEL, CONF_TOKEN, Platform
@@ -51,6 +51,8 @@ from .const import (
     KEY_DEVICE,
     MODEL_AIRFRESH_A1,
     MODEL_AIRFRESH_T2017,
+    MODEL_AIRHUMIDIFIER_CA4,
+    MODEL_AIRHUMIDIFIER_CA6,
     MODEL_FAN_1C,
     MODEL_FAN_P5,
     MODEL_FAN_P9,
@@ -122,6 +124,11 @@ MODEL_TO_CLASS_MAP = {
     MODEL_FAN_P18: FanMiot,
     MODEL_FAN_P5: FanP5,
     MODEL_FAN_ZA5: FanZA5,
+}
+
+HUMIDIFER_MODEL_TO_CLASS_MAP = {
+    MODEL_AIRHUMIDIFIER_CA4: AirHumidifierMiot,
+    MODEL_AIRHUMIDIFIER_CA6: AirHumidifierMiotCA6,
 }
 
 
@@ -325,7 +332,9 @@ async def async_create_miio_device_and_coordinator(
 
     # Humidifiers
     if model in MODELS_HUMIDIFIER_MIOT:
-        device = AirHumidifierMiot(host, token, lazy_discover=lazy_discover)
+        device = HUMIDIFER_MODEL_TO_CLASS_MAP[model](
+            host, token, lazy_discover=lazy_discover
+        )
         migrate = True
     elif model in MODELS_HUMIDIFIER_MJJSQ:
         device = AirHumidifierMjjsq(
@@ -441,7 +450,7 @@ async def async_setup_gateway_entry(hass: HomeAssistant, entry: ConfigEntry) -> 
             """Fetch data from the subdevice."""
             try:
                 await hass.async_add_executor_job(sub_device.update)
-            except GatewayException as ex:
+            except DeviceException as ex:
                 _LOGGER.error("Got exception while fetching the state: %s", ex)
                 return {ATTR_AVAILABLE: False}
             return {ATTR_AVAILABLE: True}

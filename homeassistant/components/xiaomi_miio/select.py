@@ -6,26 +6,29 @@ from dataclasses import dataclass, field
 import logging
 from typing import NamedTuple
 
-from miio.fan_common import LedBrightness as FanLedBrightness
-from miio.integrations.airpurifier.dmaker.airfresh_t2017 import (
+from miio.integrations.dmaker.airfresh.airfresh_t2017 import (
     DisplayOrientation as AirfreshT2017DisplayOrientation,
     PtcLevel as AirfreshT2017PtcLevel,
 )
-from miio.integrations.airpurifier.zhimi.airfresh import (
+from miio.integrations.zhimi.airpurifier.airfresh import (
     LedBrightness as AirfreshLedBrightness,
 )
-from miio.integrations.airpurifier.zhimi.airpurifier import (
+from miio.integrations.zhimi.airpurifier.airpurifier import (
     LedBrightness as AirpurifierLedBrightness,
     OperationMode as AirpurifierOperationMode,
 )
-from miio.integrations.airpurifier.zhimi.airpurifier_miot import (
+from miio.integrations.zhimi.airpurifier.airpurifier_miot import (
     LedBrightness as AirpurifierMiotLedBrightness,
 )
-from miio.integrations.humidifier.zhimi.airhumidifier import (
+from miio.integrations.zhimi.fan.fan import LedBrightness as FanLedBrightness
+from miio.integrations.zhimi.humidifier.airhumidifier import (
     LedBrightness as AirhumidifierLedBrightness,
 )
-from miio.integrations.humidifier.zhimi.airhumidifier_miot import (
+from miio.integrations.zhimi.humidifier.airhumidifier_miot import (
     LedBrightness as AirhumidifierMiotLedBrightness,
+)
+from miio.integrations.zhimi.humidifier.airhumidifier_miot_ca6 import (
+    LedBrightness as AirhumidifierMiotCA6LedBrightness,
 )
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
@@ -44,6 +47,7 @@ from .const import (
     MODEL_AIRFRESH_VA4,
     MODEL_AIRHUMIDIFIER_CA1,
     MODEL_AIRHUMIDIFIER_CA4,
+    MODEL_AIRHUMIDIFIER_CA6,
     MODEL_AIRHUMIDIFIER_CB1,
     MODEL_AIRHUMIDIFIER_V1,
     MODEL_AIRPURIFIER_3,
@@ -106,6 +110,9 @@ MODEL_TO_ATTR_MAP: dict[str, list] = {
     ],
     MODEL_AIRHUMIDIFIER_CA4: [
         AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirhumidifierMiotLedBrightness)
+    ],
+    MODEL_AIRHUMIDIFIER_CA6: [
+        AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirhumidifierMiotCA6LedBrightness)
     ],
     MODEL_AIRHUMIDIFIER_CB1: [
         AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirhumidifierLedBrightness)

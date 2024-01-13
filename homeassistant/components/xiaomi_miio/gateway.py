@@ -5,8 +5,8 @@ import logging
 from construct.core import ChecksumError
 from micloud import MiCloud
 from micloud.micloudexception import MiCloudAccessDenied
-from miio import DeviceException, gateway
-from miio.gateway.gateway import GATEWAY_MODEL_EU
+from miio import DeviceException
+from miio.integrations.lumi.gateway.gateway import GATEWAY_MODEL_EU, Gateway
 
 from .const import (
     CONF_CLOUD_COUNTRY,
@@ -69,7 +69,7 @@ class ConnectXiaomiGateway:
     def connect_gateway(self):
         """Connect the gateway in a way that can called by async_add_executor_job."""
         try:
-            self._gateway_device = gateway.Gateway(self._host, self._token)
+            self._gateway_device = Gateway(self._host, self._token)
             # get the gateway info
             self._gateway_info = self._gateway_device.info()
         except DeviceException as error:
