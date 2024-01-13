@@ -7,13 +7,12 @@ from dataclasses import dataclass
 import logging
 
 from miio import AirQualityMonitor, DeviceException
-from miio.gateway.gateway import (
+from miio.integrations.lumi.gateway.gateway import (
     GATEWAY_MODEL_AC_V1,
     GATEWAY_MODEL_AC_V2,
     GATEWAY_MODEL_AC_V3,
     GATEWAY_MODEL_AQARA,
     GATEWAY_MODEL_EU,
-    GatewayException,
 )
 
 from homeassistant.components.sensor import (
@@ -60,6 +59,8 @@ from .const import (
     MODEL_AIRFRESH_VA2,
     MODEL_AIRFRESH_VA4,
     MODEL_AIRHUMIDIFIER_CA1,
+    MODEL_AIRHUMIDIFIER_CA4,
+    MODEL_AIRHUMIDIFIER_CA6,
     MODEL_AIRHUMIDIFIER_CB1,
     MODEL_AIRPURIFIER_3C,
     MODEL_AIRPURIFIER_3C_REV_A,
@@ -82,7 +83,6 @@ from .const import (
     MODEL_FAN_ZA5,
     MODELS_AIR_QUALITY_MONITOR,
     MODELS_HUMIDIFIER_MIIO,
-    MODELS_HUMIDIFIER_MIOT,
     MODELS_HUMIDIFIER_MJJSQ,
     MODELS_PURIFIER_MIIO,
     MODELS_PURIFIER_MIOT,
@@ -133,6 +133,7 @@ ATTR_PURIFY_VOLUME = "purify_volume"
 ATTR_SENSOR_STATE = "sensor_state"
 ATTR_USE_TIME = "use_time"
 ATTR_WATER_LEVEL = "water_level"
+ATTR_SELF_CLEAN_PERCENT = "self_clean_percent"
 ATTR_DND_START = "start"
 ATTR_DND_END = "end"
 ATTR_LAST_CLEAN_TIME = "duration"
@@ -189,6 +190,14 @@ SENSOR_TYPES = {
         translation_key=ATTR_WATER_LEVEL,
         native_unit_of_measurement=PERCENTAGE,
         icon="mdi:water-check",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ATTR_SELF_CLEAN_PERCENT: XiaomiMiioSensorDescription(
+        key=ATTR_SELF_CLEAN_PERCENT,
+        name="Self clean percent",
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        icon="mdi:progress-clock",
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -387,12 +396,19 @@ HUMIDIFIER_CA1_CB1_SENSORS = (
     ATTR_USE_TIME,
     ATTR_WATER_LEVEL,
 )
-HUMIDIFIER_MIOT_SENSORS = (
+HUMIDIFIER_MIOT_CA4_SENSORS = (
     ATTR_ACTUAL_SPEED,
     ATTR_HUMIDITY,
     ATTR_TEMPERATURE,
     ATTR_USE_TIME,
     ATTR_WATER_LEVEL,
+)
+HUMIDIFIER_MIOT_CA6_SENSORS = (
+    ATTR_ACTUAL_SPEED,
+    ATTR_HUMIDITY,
+    ATTR_TEMPERATURE,
+    ATTR_WATER_LEVEL,
+    ATTR_SELF_CLEAN_PERCENT,
 )
 HUMIDIFIER_MJJSQ_SENSORS = (ATTR_HUMIDITY, ATTR_TEMPERATURE)
 
@@ -815,8 +831,10 @@ async def async_setup_entry(
             sensors: Iterable[str] = []
             if model in MODEL_TO_SENSORS_MAP:
                 sensors = MODEL_TO_SENSORS_MAP[model]
-            elif model in MODELS_HUMIDIFIER_MIOT:
-                sensors = HUMIDIFIER_MIOT_SENSORS
+            elif model in MODEL_AIRHUMIDIFIER_CA4:
+                sensors = HUMIDIFIER_MIOT_CA4_SENSORS
+            elif model in MODEL_AIRHUMIDIFIER_CA6:
+                sensors = HUMIDIFIER_MIOT_CA6_SENSORS
             elif model in MODELS_HUMIDIFIER_MJJSQ:
                 sensors = HUMIDIFIER_MJJSQ_SENSORS
             elif model in MODELS_HUMIDIFIER_MIIO:
@@ -1017,7 +1035,7 @@ class XiaomiGatewayIlluminanceSensor(SensorEntity):
                 self._gateway.get_illumination
             )
             self._available = True
-        except GatewayException as ex:
+        except DeviceException as ex:
             if self._available:
                 self._available = False
                 _LOGGER.error(
