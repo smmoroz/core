@@ -12,9 +12,7 @@ from miio.integrations.zhimi.humidifier.airhumidifier import (
 )
 from miio.integrations.zhimi.humidifier.airhumidifier_miot import (
     OperationMode as AirhumidifierMiotOperationMode,
-)
-from miio.integrations.zhimi.humidifier.airhumidifier_miot_ca6 import (
-    OperationMode as AirhumidifierMiotCA6OperationMode,
+    OperationModeCA6 as AirhumidifierMiotCA6OperationMode,
 )
 
 from homeassistant.components.humidifier import (
