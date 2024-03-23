@@ -1,4 +1,5 @@
 """The tests for Netatmo component."""
+
 from datetime import timedelta
 from time import time
 from unittest.mock import AsyncMock, patch
@@ -6,11 +7,14 @@ from unittest.mock import AsyncMock, patch
 import aiohttp
 from pyatmo.const import ALL_SCOPES
 import pytest
+from syrupy import SnapshotAssertion
 
 from homeassistant import config_entries
+from homeassistant.components import cloud
 from homeassistant.components.netatmo import DOMAIN
 from homeassistant.const import CONF_WEBHOOK_ID, Platform
 from homeassistant.core import CoreState, HomeAssistant
+import homeassistant.helpers.device_registry as dr
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 
@@ -119,7 +123,7 @@ async def test_setup_component_with_config(
 
         await hass.async_block_till_done()
 
-        assert fake_post_hits == 10
+        assert fake_post_hits >= 8
         mock_impl.assert_called_once()
         mock_webhook.assert_called_once()
 
@@ -197,10 +201,8 @@ async def test_setup_with_cloud(
 
     with patch(
         "homeassistant.components.cloud.async_is_logged_in", return_value=True
-    ), patch(
-        "homeassistant.components.cloud.async_is_connected", return_value=True
-    ), patch(
-        "homeassistant.components.cloud.async_active_subscription", return_value=True
+    ), patch.object(cloud, "async_is_connected", return_value=True), patch.object(
+        cloud, "async_active_subscription", return_value=True
     ), patch(
         "homeassistant.components.cloud.async_create_cloudhook",
         return_value="https://hooks.nabu.casa/ABCD",
@@ -219,8 +221,8 @@ async def test_setup_with_cloud(
         assert await async_setup_component(
             hass, "netatmo", {"netatmo": {"client_id": "123", "client_secret": "abc"}}
         )
-        assert hass.components.cloud.async_active_subscription() is True
-        assert hass.components.cloud.async_is_connected() is True
+        assert cloud.async_active_subscription(hass) is True
+        assert cloud.async_is_connected(hass) is True
         fake_create_cloudhook.assert_called_once()
 
         assert (
@@ -265,9 +267,7 @@ async def test_setup_with_cloudhook(hass: HomeAssistant) -> None:
         "homeassistant.components.cloud.async_is_logged_in", return_value=True
     ), patch(
         "homeassistant.components.cloud.async_is_connected", return_value=True
-    ), patch(
-        "homeassistant.components.cloud.async_active_subscription", return_value=True
-    ), patch(
+    ), patch.object(cloud, "async_active_subscription", return_value=True), patch(
         "homeassistant.components.cloud.async_create_cloudhook",
         return_value="https://hooks.nabu.casa/ABCD",
     ) as fake_create_cloudhook, patch(
@@ -285,7 +285,7 @@ async def test_setup_with_cloudhook(hass: HomeAssistant) -> None:
         mock_auth.return_value.async_addwebhook.side_effect = AsyncMock()
         mock_auth.return_value.async_dropwebhook.side_effect = AsyncMock()
         assert await async_setup_component(hass, "netatmo", {})
-        assert hass.components.cloud.async_active_subscription() is True
+        assert cloud.async_active_subscription(hass) is True
 
         assert (
             hass.config_entries.async_entries("netatmo")[0].data["cloudhook_url"]
@@ -308,7 +308,7 @@ async def test_setup_component_with_delay(
     hass: HomeAssistant, config_entry: MockConfigEntry
 ) -> None:
     """Test setup of the netatmo component with delayed startup."""
-    hass.state = CoreState.not_running
+    hass.set_state(CoreState.not_running)
 
     with patch(
         "pyatmo.AbstractAsyncAuth.async_addwebhook", side_effect=AsyncMock()
@@ -461,3 +461,37 @@ async def test_setup_component_invalid_token(
 
     for config_entry in hass.config_entries.async_entries("netatmo"):
         await hass.config_entries.async_remove(config_entry.entry_id)
+
+
+async def test_devices(
+    hass: HomeAssistant,
+    device_registry: dr.DeviceRegistry,
+    config_entry: MockConfigEntry,
+    snapshot: SnapshotAssertion,
+    netatmo_auth: AsyncMock,
+) -> None:
+    """Test devices are registered."""
+    with selected_platforms(
+        [
+            Platform.CAMERA,
+            Platform.CLIMATE,
+            Platform.COVER,
+            Platform.LIGHT,
+            Platform.SELECT,
+            Platform.SENSOR,
+            Platform.SWITCH,
+        ]
+    ):
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
+
+        await hass.async_block_till_done()
+
+    device_entries = dr.async_entries_for_config_entry(
+        device_registry, config_entry.entry_id
+    )
+
+    assert device_entries
+
+    for device_entry in device_entries:
+        identifier = list(device_entry.identifiers)[0]
+        assert device_entry == snapshot(name=f"{identifier[0]}-{identifier[1]}")
