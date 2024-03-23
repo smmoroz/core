@@ -27,9 +27,6 @@ from miio.integrations.zhimi.humidifier.airhumidifier import (
 from miio.integrations.zhimi.humidifier.airhumidifier_miot import (
     LedBrightness as AirhumidifierMiotLedBrightness,
 )
-from miio.integrations.zhimi.humidifier.airhumidifier_miot_ca6 import (
-    LedBrightness as AirhumidifierMiotCA6LedBrightness,
-)
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.config_entries import ConfigEntry
@@ -112,7 +109,7 @@ MODEL_TO_ATTR_MAP: dict[str, list] = {
         AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirhumidifierMiotLedBrightness)
     ],
     MODEL_AIRHUMIDIFIER_CA6: [
-        AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirhumidifierMiotCA6LedBrightness)
+        AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirhumidifierMiotLedBrightness)
     ],
     MODEL_AIRHUMIDIFIER_CB1: [
         AttributeEnumMapping(ATTR_LED_BRIGHTNESS, AirhumidifierLedBrightness)
